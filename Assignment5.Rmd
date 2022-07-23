@@ -138,12 +138,17 @@ trip_eda(trip_data)
 
   The trip dataset contained 326,339 trip observations of 11 variables from 01/01/2014 to 09/09/2014. Within the 11 variables there was one numerical variable, duration, and the rest of the variables were categorical; id, start station id, end station id, bike id, start date, start station name, end date, end station name, subscription type, and zip code. The zip code variable contains a total of 50 observations that were recorded as 0’s and can be interpreted as NAs; all other data was complete.
   
-  There was an average trip duration in seconds was ~1132 seconds. The duration data is also skewed to the right, has a high variance (27), and high standard deviation (30816). Out of the 74 different stations, San Francisco Caltrain (Townsend at 4th), had the highest frequency with 25144 (7.7%) start station observations (Figure 4) and 33213 (10.18%) end station observations (Figure 5). Figure 6 displays the frequency of trips that were made by subscribers and customers.It was found that ~85% (277763 observations) of the trips from this data set were from subscribers and the other ~15% (48576 observations) of the trips were from the customers.
+  There was an average trip duration in seconds was ~1132 seconds. The duration data is also skewed to the right, has a high variance (27), and high standard deviation (30816). Out of the 74 different stations, San Francisco Caltrain (Townsend at 4th), had the highest frequency with 25144 (7.7%) start station observations (Figure 5) and 33213 (10.18%) end station observations (Figure 6). Figure 7 displays the frequency of trips that were made by subscribers and customers.It was found that ~85% (277763 observations) of the trips from this data set were from subscribers and the other ~15% (48576 observations) of the trips were from the customers.
   
-![Figure 4. Barplot of categorical variable start_station_name within the trip dataset.](start_station_name.jpeg)
 
-![Figure 5. Barplot of categorical variable end_station_name within the trip dataset.](end_station_name.jpeg)
-![Figure 6. Bar plot of categorical variable subscription_type with the trip dataset.](subscription_type.jpeg)
+![**Figure 5.** Barplot of categorical variable start_station_name within the trip dataset.](start_station_name.jpeg)
+
+
+![**Figure 6.** Barplot of categorical variable end_station_name within the trip dataset.](end_station_name.jpeg)
+
+
+![**Figure 7.** Bar plot of categorical variable subscription_type with the trip dataset.](subscription_type.jpeg)
+
 ## Cancelled Trips
 
 ### R code:
@@ -164,13 +169,15 @@ saveRDS(trip_data2, "trip_data2.rds")
   
   Within the trip dataset cancelled trips were identified to be trips with duration less than 2 minutes. It was found that there was a total of 2499 cancelled trips within this dataset, these observations are stored in the trip_data_cancelled dataframe and removed from the original dataset.
   
+  
 ## Outliers
 
 ### R code:
+
 ```{r outliers}
 # trip data outliers 
 
-trip_data2 <- readRDS("trips_2minutes.RDS")
+trip_data2 <- readRDS("trip_data2.RDS")
 
 # create a dataframe to store trip data outliers
 trip_outliers <- data.frame()
@@ -288,4 +295,362 @@ saveRDS(weather_data, "weather_no_outliers.rds")
   
   There were a total of 80 outliers in the weather dataset and were stored in the weather_no_outliers dataset. Outliers were evaluated for the following variables within weather dataset: mean temperature, minimum temperature, maximum temperature, mean visibility, minimum visibility, maximum visibility, mean windspeed, maximum wind speed, maximum gust speed, and precipitation. Mean temperature did not contain any outliers. Minimum visibility contained outliers, however the distribution was onesided and thus the outliers were removed. The boxplot for precipitation also showed the data too be heavily and the outliers were ignored for this variable as well. Both mean and minimum visibility had outliers with an IQR of 0 so the outliers were ignored for these variables. The minimum and maximum temperature variables each had one outlier that were stored in the mintemp_outrows and maxtemp_outrows dataframes respectively. Mean wind had 19 outliers that were stored in mean_wind_outrows, maximum wind had 14 outliers that are stored in max_wind_outrows, and maximum gust had 44 outliers that were stored in max_gust_outrows. The cleaned weather dataset was stored in the weather_data dataset.
   
+## Rush Hours
+
+### R code: 
+
+```{r rush_hours}
+# DETERMINE THE HIGHEST VOLUME HOURS ON WEEKDAYS
+
+library("dplyr")
+library("lubridate")
+
+# Load the trip data with no outliers
+trips <- readRDS("trip_no_outliers.rds")
+
+# Convert the starting time to date format
+trips <- trips %>% mutate(start_date = mdy_hm(start_date))
+
+# Identify which day each trip started on
+trips$weekday = weekdays(trips$start_date)
+
+# Determine if there are any duplicate entries in the 
+table(trips$start_station_name)
+  # Post at Kearney and Post at Kearny (have same ID)
+  # Washington at Kearney and Washington at Kearney (have same ID)
+
+#### Determine rush hours through all weekdays
+
+# Build function to determine the peak hours 
+rush_hour <- function(trip_data, week_day) {
+  # Build new dataframe with trips for only the specificied weekday
+  trip_day_df <- trip_data[trip_data$weekday == week_day,]
+  # Create new variable that summarizes the hour the trip started
+  trip_day_df$hour = as.numeric(format(trip_day_df$start_date, "%H"))
+  # Create summary histogram
+  hist(trip_day_df$hour, main = paste("Numer of Trips Throughout", week_day), xlab = "Time in Hours")
+}
+
+# Determine rush hours for Mondays
+rush_hour(trips, "Monday")
+
+# Determine rush hours for Tuesdays
+rush_hour(trips, "Tuesday")
+
+# Determine rush hours for Wednesdays
+rush_hour(trips, "Wednesday")
+
+# Determine rush hours for Thursdays
+rush_hour(trips, "Thursday")
+
+# Determine rush hours for Fridays
+rush_hour(trips, "Friday")
+
+# Build new dataframe with all weekdays
+weekday_trips <- trips[trips$weekday == "Monday" | trips$weekday == "Tuesday" | 
+                       trips$weekday == "Wednesday" | trips$weekday == "Thursday" |
+                       trips$weekday == "Friday", ]
+
+# Create new column that takes the "hour" the trip begin at
+weekday_trips$hour = as.numeric(format(weekday_trips$start_date, "%H"))
+
+# Plot hours on a histogram for visualization
+hist(weekday_trips$hour, main = "Numer of Trips Throughout Weekdays", xlab = "Time in Hours")
+# Rush hours are 8:00 (8am)
+# And 17:00 5(pm)
+
+#### Determine the busiest 10 starting and ending stations during rush hours on weekdays
+
+# Create new dataframe with only the trips during the morning rush hour
+morning_rush <- weekday_trips[weekday_trips$hour == 8,]
+
+# Create a table containing the 10 busiest starting station in order
+morning_starting <- table(morning_rush$start_station_id)
+morning_starting <- sort(morning_starting, decreasing = T, na.rm = T)[1:10]
+ms_proportion <- sum(morning_starting)/nrow(trips)
+
+# Plot the 10 busiest starting station in the morning rush hour
+barplot(morning_starting, 
+        main = "Ten Busiest Starting Stations During Morning Rush Hour",
+        ylab = "Number of Trips",
+        cex.lab = 1.2,
+        cex.axis = 1,
+        cex.names = 1.2,
+        ylim = c(0,7000),
+        las = 2)
+
+# Create a table containing the 10 busiest ending station in order
+morning_ending <- table(morning_rush$end_station_id)
+morning_ending <- sort(morning_ending, decreasing = T, na.rm = T)[1:10]
+
+# Determine the proportion of all trips that the stations make up
+me_proportion <- sum(morning_ending)/nrow(trips)
+
+# Plot the 10 busiest ending stations in the morning rush hour
+barplot(morning_ending, 
+        main = "Ten Busiest Ending Stations During Morning Rush Hour",
+        ylab = "Number of Trips",
+        cex.lab = 1.2,
+        cex.axis = 1.0,
+        cex.names = 1.2,
+        ylim = c(0,7000),
+        las = 2)
+
+# Create a new dataframe with only the trips during the evening rush hour
+evening_rush <- weekday_trips[weekday_trips$hour == 17,]
+
+# Create a table containing the 10 busiest starting station in order
+evening_starting <- table(evening_rush$start_station_id)
+evening_starting <- sort(evening_starting, decreasing = T, na.rm = T)[1:10]
+
+# Determine the proportion of all trips that the stations make up
+es_proportion <- sum(evening_starting)/nrow(trips)
+
+# Plot the 10 busiest starting station in the evening rush hour
+barplot(evening_starting, 
+        main = "Ten Busiest Starting Stations During Evening Rush Hour",
+        ylab = "Number of Trips",
+        xlab = "Station ID",
+        cex.lab = 1.2,
+        cex.axis = 1.0,
+        cex.names = 1.2,
+        ylim = c(0,7000),
+        las = 2)
+
+# Create a table containing the 10 busiest ending station in order
+evening_ending <- table(evening_rush$end_station_id)
+evening_ending <- sort(evening_ending, decreasing = T, na.rm = T)[1:10]
+
+# Determine the proportion of all trips that the stations make up
+ee_proportion <- sum(evening_ending)/nrow(trips)
+
+# Plot the 10 busiest ending stations in the evening rush hour
+barplot(evening_ending, 
+        main = "Ten Busiest Ending Stations During Evening Rush Hour",
+        ylab = "Number of Trips",
+        xlab = "Station ID",
+        cex.lab = 1.2,
+        cex.axis = 1.0,
+        cex.names = 1.2,
+        ylim = c(0,7000),
+        las = 2)
+
+##### Determine the busiest 10 stations during weekends
+
+# Build new dataframe with only weekends
+weekend_trips <- trips[trips$weekday == "Saturday" | trips$weekday == "Sunday",]
+
+# Make a table including the 10 most frequent starting stations on weekends
+weekend_starting <- table(weekend_trips$start_station_id)
+weekend_starting <- sort(weekend_starting, decreasing = T, na.rm = T)[1:10]
+
+# Determine the proportion of all trips that the stations make up
+ws_proportion <- sum(weekend_starting)/nrow(trips)
+
+# Plot the 10 busiest starting stations during the weekend
+barplot(weekend_starting, 
+        main = "Ten Busiest Starting Stations During Weekends",
+        ylab = "Number of Trips",
+        xlab = "Station ID",
+        cex.lab = 1.2,
+        cex.axis = 1.0,
+        cex.names = 1.2,
+        ylim = c(0,2500),
+        las = 2)
+
+# Make a table including the 10 most frequent ending stations on weekends
+weekend_ending <- table(weekend_trips$end_station_id)
+weekend_ending <- sort(weekend_ending, decreasing = T, na.rm = T)[1:10]
+
+# Determine the proportion of all trips that the stations make up
+ws_proportion <- sum(weekend_starting)/nrow(trips)
+
+# Plot the 10 busiest ending stations during the weekend
+barplot(weekend_ending, 
+        main = "Ten Busiest Ending Stations During Weekends",
+        ylab = "Number of Trips",
+        xlab = "Station ID",
+        cex.lab = 1.2,
+        cex.axis = 1.0,
+        cex.names = 1.2,
+        ylim = c(0,2500),
+        las = 2)
+# Determine the proportion of all trips that the stations make up
+we_proportion <- sum(weekend_ending)/nrow(trips)
+
+```
+
+
+### Rush Hours on Weekdays
+
+  Histograms indicated that the busiest hours of each weekday individually were 8 AM and 5 PM based on number of trips beginning during these hours (Figure 8). A combined histogram including trips from all weekdays corroborated this result (Figure 9). A total of 39,744 (14.77%) trips began between 8:00 and 9:00 AM. 35,738 (13.27%) trips began between 5:00 and 6:00 PM on weekdays.
   
+
+![**Figure 8.** Histograms of the number of starting trips per hour for individual weekdays.](weekdaytrips.png)
+
+
+![**Figure 9.** Histogram of the number of starting trips per hour for all weekdays combined.](totalweekdaytrips.png)
+
+
+### Busiest Stations During Rush Hours and Weekends
+
+  During the morning rush hour (8 AM) on weekdays, the ten busiest starting stations in descending order were San Francisco Caltrain (Townsend at 4th) (ID: 70), Harry Bridges Plaza (Ferry Building) (ID: 50), San Francisco Caltrain 2 (330 Townsend) (ID: 69), Temporary Transbay Terminal (Howard at Beale) (ID: 55), Steuart at Market (ID: 74), Grant Avenue at Columbus Avenue (ID: 73), 2nd at Townsend (ID: 61), Embarcadero at Bryant (ID: 54), Civic Center BART (7th at Market) (ID: 72), and South Van Ness at Market (ID: 66) (Figure 10A).  Trips starting at these stations during this time represented 8.03% of all trips in the dataset.
+
+  During the morning rush hour (8 AM) on weekdays, the ten busiest ending stations in descending order were San Francisco Caltrain (Townsend at 4th) (ID: 70), 2nd at Townsend (ID: 61), Townsend at 7th (ID: 65), Market at Sansome (ID: 77), Embarcadero at Sansome (ID: 60), 2nd at South Park (ID: 64),  San Francisco Caltrain 2 (330 Townsend) (ID: 69), Howard at 2nd (ID: 63), Embarcadero at Folsom (ID: 51), and Steuart at Market (ID: 74) (Figure 10B). Trips ending at these stations during this time represented 6.13% of all trips in the dataset.
+  
+
+![**Figure 10.** Barplots of ten busiest starting (A) and ending (B) stations during the morning rush hour.](morningrush.png)
+
+  During the evening rush hour (5 PM) on weekdays, the ten busiest starting stations in descending order were Townsend at 7th (ID: 65),  San Francisco Caltrain (Townsend at 4th) (ID: 70), 2nd at Townsend (ID: 61), Market at Sansome (ID: 77), 2nd at South Park (ID: 64),  Embarcadero at Sansome (ID: 60),  Steuart at Market (ID: 74), San Francisco Caltrain 2 (330 Townsend) (ID: 69),  Embarcadero at Folsom (ID: 51), and Commercial at Montgomery (ID: 45) (Figure 11A). Trips starting during this time at these stations represented 5.00% of all trips in the dataset.
+
+  During the evening rush hour (5 PM) on weekdays, the ten busiest ending stations in descending order were San Francisco Caltrain (Townsend at 4th) (ID: 70), San Francisco Clatrain 2 (330 Townsend) (ID: 69),  Harry Bridges Plaza (Ferry Building) (ID: 50),  Temporary Transbay Terminal (Howard at Beale) (ID: 55), Steuart at Market (ID: 74), Market at Sansome (ID: 77),  Powell Street BART (ID: 39), 2nd at Townsend (ID: 61), Civic Center BART (7th at Market) (ID: 72), and Townsend at 7th (ID: 65) (Figure 11B). Trips ending during this period at these stations represented 7.37% of all trips in the dataset. 
+  
+
+![**Figure 11.** Barplots of ten busiest starting (A) and ending (B) stations during the evening rush hour.](eveningrush.png)
+  
+  The ten busiest starting stations during the weekends in descending order were Embarcadero at Sansome (ID: 60), Harry Bridges Plaza (Ferry Building) (ID: 50), Market at 4th (ID: 76), 2nd at Townsend (ID: 61), Embercadero at BART ID (ID: 54), Powell Street BART (ID: 39), San Francisco Caltrain (Townsend at 4th) (ID: 70), Grant Avenue at Columbus Avenue (ID: 73), San Francisco Caltrain 2 (330 Townsend) (ID: 69), and Townsend at 7th (ID: 65) (Figure 12A). Trips starting on the weekend at these stations represented 4.28% of all trips in the dataset.
+
+  The ten busiest ending stations during the weekends in descending order were  Harry Bridges Plaza (Ferry Building) (ID: 50), Embarcadero at Sansome (ID: 60), Market at 4th (ID: 76), Powell Street BART (ID: 39), San Francisco Caltrain (Townsend at 4th) (ID: 70), 2nd at Townsend (ID: 61),  Embercadero at BART ID (ID: 54),  Steuart at Market (ID: 74), Townsend at 7th (ID: 65),  Market at Sansome (ID: 77) (Figure 12B). Trips starting on the weekend at these stations represented 4.49% of all trips in the dataset.
+
+  
+![**Figure 12.** Barplots of ten busiest starting (A) and ending (B) stations during weekends.](weekends.png)
+
+## Average Utilization of Bikes for Each Month
+
+### R code:
+
+```{r avg_utilization}
+trip_data2 <- readRDS("trip_no_outliers.rds")
+library("dplyr")
+
+# Calculate the average utilization of bikes for each month (total time used/total time in month)
+
+# convert start date into date type 
+trip_data2$start_date <- as.POSIXct(trip_data2$start_date, format="%m/%d/%Y")
+
+# create a column for month in the data frame base on the start date
+trip_data2$Month<-months(trip_data2$start_date)
+
+# group the duration by months 
+avg_utilization <- trip_data2 %>% 
+  group_by(Month) %>%
+  summarise_at(vars(duration), list(TotalDuration = sum)) %>%
+  # create a row for the average per month 
+  mutate(AverageUtilization = 0)
+
+# Assign values for AverageUtilization depending on the month
+# 2678000 seconds in a 31 day month
+avg_utilization$AverageUtilization <- ifelse(avg_utilization$Month == "January"|avg_utilization$Month == "March" | 
+                                          avg_utilization$Month == "May" | avg_utilization$Month == "July" | 
+                                          avg_utilization$Month == "August"| avg_utilization$Month == "October" |
+                                          avg_utilization$Month == "December", avg_utilization$TotalDuration/2678000,
+                                          # February has 2419200 seconds in a 28-day month
+                                  ifelse(avg_utilization$Month == "February", avg_utilization$TotalDuration/2419200,
+                                         # all other months have 2592000 seconds 
+                                         avg_utilization$TotalDuration/2592000))
+
+```
+
+  The average utilization of bikes for each month was calculated in respect to the start date, average duration per month, and the total time in each month (Table 1). The total duration for each month was summed and the total duration for each specific month was determined to perform the analysis.
+  
+**Table 1:** Calculated monthly average utilization in percentage from the trip dataset for the year of 2014. 
+
+|Month|Average Utilization (%)|
+|:---:|:----------------------|
+|January|437|
+|February|371|
+|March|441|
+|April|487|
+|May|516|
+|June|561|
+|July|569|
+|August|562|
+|September|598|
+|October|631|
+|November|483|
+|December|356|
+
+## Correlation between Different Weather Metrics and Trip Duration
+
+
+### R code:
+
+```{r correlation}
+library(dplyr)
+library(lubridate)
+library(corrplot)
+#### Import weather data
+weather <- readRDS("weather_no_outliers.rds")
+
+# Replace T values in precipitation_inches with 0 and convert to numeric
+weather$precipitation_inches <- stringr::str_replace(weather$precipitation_inches, "T", "0")
+weather <- weather %>% mutate(precipitation_inches = as.numeric(precipitation_inches))
+
+# Replace empty values with "No Event" in events
+weather$events[weather$events == ""] <- "No Event"
+weather$events[weather$events == "rain"] <- "Rain"
+
+# Convert zip_code to character 
+weather$zip_code <- as.character(weather$zip_code)
+
+# Convert date to POSIX format
+weather <- weather %>% mutate(date = mdy(date))
+
+summary(weather)
+
+#### Import trip data
+trip <- readRDS("trip_no_outliers.rds")
+
+# Convert starting date to POSIX format with only dates
+trip <- trip %>% mutate(start_date = as.Date(mdy_hm(start_date)))
+
+station <- read.csv("station.csv")
+
+#### Join weather and join tables
+
+# Join station to trips using name and start station to get cities
+ts_joined <- inner_join(station,trip, by = c("id" = "start_station_id"))
+
+# Join weather to ts_joined by date and city (ensures there are only weather reports for the same day and location)                      
+wt_joined <- inner_join(ts_joined, weather, by = c("start_date" = "date", "city" = "city"))
+table(wt_joined$events)
+table(wt_joined$city)
+
+# Determine the number of trips for each event (skewed as there are naturally more events)
+wt_events <- wt_joined %>%
+  group_by(city) %>%
+  summarise(events = table(events))
+  # Should not use weather events as there are naturally more days with no events, and cities follow the same ratio
+  
+# Create a new data set only containing the numerical weather measurements
+wt_numerical <- dplyr::select(wt_joined,c(duration, max_temperature_f:cloud_cover))
+
+# Create correlation plot
+wt_corr <- cor(wt_numerical, use = "complete.obs")
+
+# Rename columns and rows for plot
+colnames(wt_corr) <- c("Duration","Max Temperature (F)", "Mean Temperature (F)", "Min Temperature (F)"
+                  , "Max Visibility (miles)", "Mean Visibility (miles)", "Min Visibility (miles)",
+                  "Max Wind Speed (mph)", "Mean Wind Speed (mph)", "Max Gust Speed (mph)",
+                  "Precipitation (inches)", "Cloud Cover")
+rownames(wt_corr) <- c("Duration", "Max Temperature (F)", "Mean Temperature (F)", "Min Temperature (F)"
+                       , "Max Visibility (miles)", "Mean Visibility (miles)", "Min Visibility (miles)",
+                       "Max Wind Speed (mph)", "Mean Wind Speed (mph)", "Max Gust Speed (mph)",
+                       "Precipitation (inches)", "Cloud Cover")
+# Create corrplot
+corrplot(wt_corr, method = "circle", 
+         order = "original", 
+         tl.col = "black", 
+         col = COL2("RdBu", 10),
+         tl.cex = 0.8,
+         tl.srt = 45,
+         cl.cex = 0.8,
+         cl.offset = 1.4)
+
+```
+
+  The weather metrics most closely correlated to trip duration were mean wind speed (r = 0.0279), maximum gust speed (r = 0.0164), and precipitation (r = -0.0156) (Figure 13). There was no discernible relationship between weather events and the number of trips as the number of trips per each weather event resembles the proportion of days for each weather seen in the events variable for each city. Maximum temperature and cloud cover had the strongest negative correlation between weather metrics that measure different characteristics of weather (temperature, visibility, wind speed, precipitation, cloudiness) (r = -0.4936) (Figure 8). Mean wind speed and minimum temperature had the strongest correlation between weather metrics that measure different characteristics of weather (r = 0.5250) (Figure 13).
+  
+
+![**Figure 13.** Matrix of correlations between different weather metrics captured across different dates and cities within the weather dataset and duration of trips for the same date and location from the trips dataset](corrplot_weathertrips.png)
+
