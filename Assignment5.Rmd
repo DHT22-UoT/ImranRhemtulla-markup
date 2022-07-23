@@ -81,8 +81,11 @@ Francisco), and 365 (20%) observations for 95113 (San Jose) (Figure 2) Of these 
 to experience rain, 57 (3.12%) had fog documented across all cities, and 13 (0.71%) had both fog
 and rain (Figure 3).
 
+
 ![**Figure 1.** Barplot of city variable within weather dataset](city.jpeg)
+
 ![**Figure 2.** Barplot of zip_code variable within weather dataset](zip_code.jpeg)
+
 ![**Figure 3.** Barplot of events variable within weather dataset](events.jpeg)
   Within the numerical variables, 1616 (88.55%) of observations for precipitation_inches
 were zero. 451 observations for maximum gust speed were missing (24.71%), thus maximum gust
