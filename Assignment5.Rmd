@@ -6,12 +6,11 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, results = 'hide',  warning=FALSE, message=FALSE, fig.show='hide')
-```
+knitr::opts_chunk$set(echo = FALSE, results = 'hide',  warning = FALSE, message = FALSE, fig.show = 'hide')
+``` 
 
 ## Exploratory Data Analysis of the Weather Dataset
 
-### R code:
 ```{r weather_EDA}
 library(funModeling)
 library(tidyverse)
@@ -62,11 +61,7 @@ saveRDS(weather_data, "weather_processed.rds")
 ```
 
   Pre-processing steps were applied before data analyses began. “T” values representing trace
-amounts of precipitation within the precipitation_inches variable were converted to 0 and the variable was converted to numerical. “rain” was converted to “Rain” in the events variable to
-properly group the variable. Within the events variable, there were 1473 observations that were
-null. These observations were converted to “No Event”, indicating that no weather event took
-place. The variable zip_code was converted to a categorical variable from numerical as there were
-only 5 zip codes, one for each of the cities described in the dataset.
+amounts of precipitation within the precipitation_inches variable were converted to 0 and the variable was converted to numerical. “rain” was converted to “Rain” in the events variable to properly group the variable. Within the events variable, there were 1473 observations that were null. These observations were converted to “No Event”, indicating that no weather event took place. The variable zip_code was converted to a categorical variable from numerical as there were only 5 zip codes, one for each of the cities described in the dataset.
 
   Within the weather dataset there are a total of 1825 observations and 15 variables. 5
 (0.27%) observations for each date were present in the data set and ranged from 1/1/2014 to
@@ -96,7 +91,7 @@ speed had less than 80% of all values as non-NA values. The mean of maximum temp
 
 ## Exploratory Data Analysis of the Trip Dataset
 
-### R code:
+ 
 
 ```{r trip_eda}
 
@@ -154,7 +149,7 @@ trip_eda(trip_data)
 
 ## Cancelled Trips
 
-### R code:
+ 
 
 ```{r cancelled_trips}
 library(dplyr)
@@ -175,7 +170,7 @@ saveRDS(trip_data2, "trip_data2.rds")
   
 ## Outliers
 
-### R code:
+ 
 
 ```{r outliers}
 # trip data outliers 
@@ -300,7 +295,7 @@ saveRDS(weather_data, "weather_no_outliers.rds")
   
 ## Rush Hours
 
-### R code: 
+  
 
 ```{r rush_hours}
 # DETERMINE THE HIGHEST VOLUME HOURS ON WEEKDAYS
@@ -520,7 +515,7 @@ we_proportion <- sum(weekend_ending)/nrow(trips)
 
 ## Average Utilization of Bikes for Each Month
 
-### R code:
+ 
 
 ```{r avg_utilization}
 trip_data2 <- readRDS("trip_no_outliers.rds")
@@ -551,7 +546,6 @@ avg_utilization$AverageUtilization <- ifelse(avg_utilization$Month == "January"|
                                   ifelse(avg_utilization$Month == "February", avg_utilization$TotalDuration/2419200,
                                          # all other months have 2592000 seconds 
                                          avg_utilization$TotalDuration/2592000))
-
 ```
 
   The average utilization of bikes for each month was calculated in respect to the start date, average duration per month, and the total time in each month (Table 1). The total duration for each month was summed and the total duration for each specific month was determined to perform the analysis.
@@ -576,7 +570,7 @@ avg_utilization$AverageUtilization <- ifelse(avg_utilization$Month == "January"|
 ## Correlation between Different Weather Metrics and Trip Duration
 
 
-### R code:
+ 
 
 ```{r correlation}
 library(dplyr)
