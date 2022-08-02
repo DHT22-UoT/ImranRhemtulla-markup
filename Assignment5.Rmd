@@ -651,3 +651,16 @@ corrplot(wt_corr, method = "circle",
 
 ![**Figure 13.** Matrix of correlations between different weather metrics captured across different dates and cities within the weather dataset and duration of trips for the same date and location from the trips dataset](corrplot_weathertrips.png)
 
+
+
+
+Peer Review - Muhammad Musa
+
+Overall the program works as expected and is able to generate a Rmd file without error. The Rmd file is correctly formatted and easy to follow along. It includes relevant headers and figure captions as needed and the overall report structure follows a chronological order, making it easier to understand.
+
+Rubric Guidlines:
+.Rmd Completeness (2/2)
+Packages (2/2)
+Text Formatting (2/2)
+Output Formatting (2/2)
+Code Chunks (2/2)
